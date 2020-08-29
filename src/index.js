@@ -8,16 +8,26 @@ class App extends Component{
     super();
     this.state = {
       users: [],
-      userId: ''
+      userId: '', // 1, 2 or 3
+      restaurants: [],
+      reservations: []
     };
   }
   async componentDidMount(){
     const users = (await axios.get('/api/users')).data;
     this.setState({ users });
+    const restaurants = (await axios.get('/api/restaurants')).data
+    this.setState({restaurants});
     makeMap('map');
     const loadReservations = async()=> {
       const userId = window.location.hash.slice(1) * 1;
-      this.setState({ userId });
+      const reservations = (await axios.get(`/api/users/${userId}/reservations`)).data
+      const restaurantNames = reservations.map(reservation => {
+        return this.state.restaurants.find(restaurant => {
+          return restaurant.id === reservation.restaurantId
+        })
+      })
+      this.setState({ reservations: restaurantNames, userId})
     };
     window.addEventListener('hashchange', async()=> {
       loadReservations();
@@ -30,7 +40,7 @@ class App extends Component{
     }
   }
   render(){
-    const { users, userId } = this.state;
+    const { users, userId , restaurants, reservations} = this.state;
     return (
       <div>
         <h1>Reservation Planner</h1>
@@ -52,10 +62,24 @@ class App extends Component{
           </section>
           <section>
             <ul id='restaurantsList'>
+              {
+                restaurants.map(restaurant => {
+                  return (
+                    <li key = {restaurant.id} className={ restaurants.id }>{restaurant.name}</li>
+                  )
+                })
+              }
             </ul>
           </section>
           <section>
             <ul id='reservationsList'>
+              {
+                reservations.map(reservation => {
+                  return (
+                  <li key = {reservation.id} className = {reservations.id }>{reservation.name} ({reservation.createdAt}</li>
+                  )
+                })
+              }
             </ul>
           </section>
           <section>
