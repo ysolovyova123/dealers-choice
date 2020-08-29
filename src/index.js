@@ -13,6 +13,7 @@ class App extends Component{
       reservations: []
     }
     this.reservationCount = this.reservationCount.bind(this)
+    this.loadReservations = this.loadReservations.bind(this)
     this.makeReservation = this.makeReservation.bind(this)
     this.destroyReservation = this.destroyReservation.bind(this)
   }
@@ -24,22 +25,18 @@ class App extends Component{
     this.setState({restaurants});
     makeMap('map');
 
-    const loadReservations = async()=> {
+    const loadInitialReservations = async()=> {
       const userId = window.location.hash.slice(1) * 1;
       const reservations = (await axios.get(`/api/users/${userId}/reservations`)).data
-      const restaurantNames = reservations.map(reservation => {
-        return this.state.restaurants.find(restaurant => {
-          return restaurant.id === reservation.restaurantId
-        })
-      })
-      this.setState({ reservations: restaurantNames, userId})
+      this.setState({ reservations: reservations, userId: userId})
     };
+
     window.addEventListener('hashchange', async()=> {
-      //console.log(this.state.reservations)
-      loadReservations();
+      console.log(this.state.reservations)
+      loadInitialReservations();
     });
     if(window.location.hash.slice(1)){
-      loadReservations();
+      loadInitialReservations();
     }
     else {
       this.setState({ userId: users[0].id });
@@ -50,7 +47,7 @@ class App extends Component{
     let count = 0
     for (let i=0; i<this.state.reservations.length; i++) {
       let currObject = this.state.reservations[i]
-      let currRestaurantName = currObject.name
+      let currRestaurantName = currObject.restaurant.name
       if (restaurantName === currRestaurantName) {
         count++
       }
@@ -58,26 +55,19 @@ class App extends Component{
     return count
   }
 
-  async makeReservation (userId,restaurantId) {
-    await axios.post(`/api/users/${userId}/reservations`,{restaurantId: restaurantId})
-    const reservations = (await axios.get(`/api/users/${userId}/reservations`)).data
-      const restaurantNames = reservations.map(reservation => {
-        return this.state.restaurants.find(restaurant => {
-          return restaurant.id === reservation.restaurantId
-        })
-      })
-    this.setState({ reservations: restaurantNames, userId})
+  async loadReservations () {
+    const userReservations = (await axios.get(`/api/users/${this.state.userId}/reservations`)).data
+    this.setState({ reservations: userReservations})
   }
 
-  async destroyReservation (reservationId) {
+  async makeReservation (userId,restaurantId) {
+    await axios.post(`/api/users/${userId}/reservations`,{restaurantId: restaurantId})
+    this.loadReservations()
+  }
+
+  async destroyReservation (userId, reservationId) {
     await axios.delete(`/api/reservations/${reservationId}`)
-    const reservations = (await axios.get(`/api/users/${this.state.userId}/reservations`)).data
-      const restaurantNames = reservations.map(reservation => {
-        return this.state.restaurants.find(restaurant => {
-          return restaurant.id === reservation.restaurantId
-        })
-      })
-    this.setState({ reservations: restaurantNames, userId: this.state.userId})
+    this.loadReservations()
   }
 
   render(){
@@ -107,7 +97,7 @@ class App extends Component{
                 restaurants.map(restaurant => {
                   return (
                   <li key = {restaurant.id} className={ restaurants.id }>
-                    <a onClick = {() => this.makeReservation(this.state.userId,restaurant.id)}>
+                    <a onClick = {() => this.makeReservation(userId,restaurant.id)}>
                       {restaurant.name} {this.reservationCount(restaurant.name)}
                     </a>
                   </li>
@@ -121,8 +111,10 @@ class App extends Component{
               {
                 reservations.map(reservation => {
                   return (
-                  <li key = {reservation.id} className = {reservations.id }>
-                    <a onClick = {() => this.destroyReservation(reservation.id)}>{reservation.name} ({reservation.createdAt})</a>
+                  <li key = {reservation.id} className = {reservation.id }>
+                    <a onClick = {() => this.destroyReservation(userId, reservation.id)}>
+                      {reservation.restaurant.name} ({reservation.createdAt})
+                    </a>
                   </li>
                   )
                 })
