@@ -1,13 +1,12 @@
 {
-  "name": "reservation-planner",
+  "name": "guest-list",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
-    "test:dev": "DATABASE_URL=postgres://localhost/acme_db_test mocha -- --watch",
-    "start:dev": "nodemon server --ignore dist/ --ignore src/ & npm run build:dev",
-    "build": "webpack",
+    "start:dev": "nodemon server.js --ignore dist/ & npm run build:dev",
+    "Start": "nodemon server.js --ignore dist/ --ignore src/ & npm run build",
+    "build": "webpack -w",
     "build:dev": "npm run build -- --watch --mode development"
   },
   "keywords": [],
@@ -21,17 +20,13 @@
     "sequelize": "^6.3.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.11.4",
+    "@babel/core": "^7.11.5",
     "@babel/preset-react": "^7.10.4",
     "axios": "^0.20.0",
     "babel-loader": "^8.1.0",
-    "chai": "^4.2.0",
-    "mapbox-gl": "^1.12.0",
-    "mocha": "^8.1.2",
     "nodemon": "^2.0.4",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "supertest": "^4.0.2",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"
   }

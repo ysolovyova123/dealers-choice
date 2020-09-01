@@ -1,104 +1,95 @@
 import React, { Component } from 'react';
 import { render } from 'react-dom';
 import axios from 'axios';
-import { makeMap } from './map';
 
 class App extends Component{
   constructor(){
     super();
     this.state = {
-      users: [],
-      userId: '', // 1, 2 or 3
-      restaurants: [],
-      reservations: []
+      groups: [],
+      tables: [],
+      guests: [],
+      groupSelection: '' // 1, 2 or 3
     }
-    this.reservationCount = this.reservationCount.bind(this)
-    this.loadReservations = this.loadReservations.bind(this)
-    this.makeReservation = this.makeReservation.bind(this)
-    this.destroyReservation = this.destroyReservation.bind(this)
+    //this.setSelection = this.setSelection.bind(this)
+    this.displayTables = this.displayTables.bind(this)
+    this.displayGuests = this.displayGuests.bind(this)
+    this.tableCount = this.tableCount.bind(this)
   }
 
   async componentDidMount(){
-    const users = (await axios.get('/api/users')).data;
-    this.setState({ users });
-    const restaurants = (await axios.get('/api/restaurants')).data
-    this.setState({restaurants});
-    makeMap('map');
+    const groups = (await axios.get('/api/groups')).data;
+    this.setState({ groups });
+    //const tables = (await axios.get('/api/tables')).data
+    //this.setState({tables});
 
-    const loadInitialReservations = async()=> {
-      const userId = window.location.hash.slice(1) * 1;
-      const reservations = (await axios.get(`/api/users/${userId}/reservations`)).data
-      this.setState({ reservations: reservations, userId: userId})
+    const setSelection = async()=> {
+      const groupSelection = window.location.hash.slice(1);
+      console.log(groupSelection)
+      //const guests = (await axios.get(`/api/guests/${groupSelection}`)).data
+      const tables = (await axios.get(`/api/tables/${groupSelection}`)).data
+      this.setState({
+        tables: tables,
+        groupSelection: groupSelection,
+        guests: []})
     };
 
     window.addEventListener('hashchange', async()=> {
-      console.log(this.state.reservations)
-      loadInitialReservations();
+      //console.log(this.state.reservations)
+      setSelection();
     });
     if(window.location.hash.slice(1)){
-      loadInitialReservations();
+      this.displayTables();
     }
     else {
-      this.setState({ userId: users[0].id });
+      this.setState({ groupSelection: groups[0].group });
     }
   }
 
-  reservationCount (restaurantName) {
-    let count = 0
-    for (let i=0; i<this.state.reservations.length; i++) {
-      let currObject = this.state.reservations[i]
-      let currRestaurantName = currObject.restaurant.name
-      if (restaurantName === currRestaurantName) {
-        count++
-      }
-    }
+  async displayTables () {
+    const tables = (await axios.get(`/api/tables/${this.state.groupSelection}`)).data
+    this.setState({ tables: tables})
+  }
+
+  tableCount () {
+    let count = this.state.guests.length
     return count
   }
 
-  async loadReservations () {
-    const userReservations = (await axios.get(`/api/users/${this.state.userId}/reservations`)).data
-    this.setState({ reservations: userReservations})
-  }
-
-  async makeReservation (userId,restaurantId) {
-    await axios.post(`/api/users/${userId}/reservations`,{restaurantId: restaurantId})
-    this.loadReservations()
-  }
-
-  async destroyReservation (userId, reservationId) {
-    await axios.delete(`/api/reservations/${reservationId}`)
-    this.loadReservations()
+  async displayGuests () {
+    const guests = (await axios.get(`/api/guests/${this.state.groupSelection}`)).data
+    this.setState({ guests: guests})
   }
 
   render(){
-    const { users, userId , restaurants, reservations} = this.state;
+    const { groups, tables , guests, groupSelection} = this.state;
     return (
       <div>
-        <h1>Reservation Planner</h1>
+        <h1>Guest List</h1>
         <main>
           <section>
-            <ul id='userList'>
-              {
-                users.map( user => {
+          <h3>Groups (Select One)</h3>
+            <ul id='groupList'>
+                {groups.map( group => {
                   return (
-                    <li key={ user.id } className={ userId === user.id ? 'selected': ''}>
-                      <a href={ `#${user.id}`}>
-                      { user.name }
+                    <li key={ group.id } className={ groupSelection === group.id ? 'selected': ''}>
+                      <a href={ `#${group.name}`}>
+                      { group.name }
                       </a>
                     </li>
                   );
-                })
-              }
+                })}
             </ul>
           </section>
           <section>
-            <ul id='restaurantsList'>
+          <h3>Tables (Select One)</h3>
+            <ul id='tableList'>
               {
-                restaurants.map(restaurant => {
+                tables.map(table => {
                   return (
-                  <li key = {restaurant.id} className={ restaurants.id }>
-                    <a onClick = {() => this.makeReservation(userId,restaurant.id)}>
-                      {restaurant.name} {this.reservationCount(restaurant.name)}
+                  <li key = {table.id} className={ table.id }>
+                    <a onClick = {() => this.displayGuests()}>
+                      {table.table}
                     </a>
                   </li>
                   )
@@ -107,22 +98,18 @@ class App extends Component{
             </ul>
           </section>
           <section>
-            <ul id='reservationsList'>
+          <h3>Guests At The Table</h3>
+            <ul id='guestList'>
               {
-                reservations.map(reservation => {
+                guests.map(guest => {
                   return (
-                  <li key = {reservation.id} className = {reservation.id }>
-                    <a onClick = {() => this.destroyReservation(userId, reservation.id)}>
-                      {reservation.restaurant.name} ({reservation.createdAt})
-                    </a>
+                  <li key = {guest.id} className = {guest.id }>
+                    {guest.name}
                   </li>
                   )
                 })
               }
             </ul>
-          </section>
-          <section>
-            <div id='map'></div>
           </section>
         </main>
       </div>
